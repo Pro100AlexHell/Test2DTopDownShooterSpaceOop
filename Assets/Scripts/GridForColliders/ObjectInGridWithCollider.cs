@@ -10,8 +10,6 @@ namespace GridForColliders
 
         public List<Vector2> ColliderPolygonCached { get; protected set; }
 
-        public abstract ColliderType ColliderType { get; }
-
         public TObjectTypeInGrid ObjectTypeInGrid { get; }
 
         protected ObjectInGridWithCollider(Vector2 pos, TObjectTypeInGrid objectTypeInGrid)

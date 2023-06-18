@@ -9,8 +9,6 @@ namespace GridForColliders
     {
         public readonly float CircleColliderRadius;
 
-        public override ColliderType ColliderType => ColliderType.Circle;
-
         /// <summary>
         /// Precision (number of points) for circle approximation
         /// (small number for optimization)
