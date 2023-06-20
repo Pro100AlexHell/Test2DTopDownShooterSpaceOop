@@ -367,12 +367,17 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
         {
             // NOTE: Asteroid is not destroyed by Player collision
 
-            // todo NOTE: Asteroid feedback for player (0.1 sec is HACK)
-            _playerPresenter.Model.DeltaPosPerSec = -_playerPresenter.Model.DeltaPosPerSec;
-            _playerPresenter.UpdatePos(0.1f, _gridForColliders);
+            DoAsteroidCollideFeedbackForPlayer();
         }
         //
         DamagePlayer(1);
+    }
+
+    private void DoAsteroidCollideFeedbackForPlayer()
+    {
+        // reverse speed (Asteroids do not spawn at Player's spawn point, so the speed will always be set)
+        _playerPresenter.Model.DeltaPosPerSec = -_playerPresenter.Model.DeltaPosPerSec;
+        _playerPresenter.UpdatePos(0.1f, _gridForColliders); // todo NOTE: 0.1 sec is HACK
     }
 
     private void TryCollideBulletsWithEnemiesOrAsteroids()
