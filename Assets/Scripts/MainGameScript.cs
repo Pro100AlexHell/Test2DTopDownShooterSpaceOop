@@ -62,7 +62,7 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
     /// </summary>
     private int _level = 1;
 
-    private int _score = 0;
+    private int _scoreThisLevel = 0;
 
     private const int ScoreForNextLevel = 10;
 
@@ -117,7 +117,7 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
         _gameState = GameState.Normal;
         RecalculateVisibilityOfViewsForGameState();
 
-        _score = 0;
+        _scoreThisLevel = 0;
         UpdateScoreView();
 
         _allBullets = new List<BulletPresenter>();
@@ -429,18 +429,18 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
 
     private void AddScore(int delta)
     {
-        _score += delta;
+        _scoreThisLevel += delta;
         UpdateScoreView();
-        if (_score >= ScoreForNextLevel)
+        if (_scoreThisLevel >= ScoreForNextLevel)
         {
-            _score = 0;
+            _scoreThisLevel = 0;
             SetStateLevelWin();
         }
     }
 
     private void UpdateScoreView()
     {
-        GlobalView.UpdateScore(_score, ScoreForNextLevel);
+        GlobalView.UpdateScore(_scoreThisLevel, ScoreForNextLevel);
     }
 
     void IForBulletOnReachTargetDestroy.SplashDamageEnemiesOrAsteroids(Vector2 pos, float range, int damage)
