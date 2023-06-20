@@ -236,6 +236,7 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
 
         TryCollidePlayerWithEnemiesOrAsteroids();
         TryCollideBulletsWithEnemiesOrAsteroids();
+        // todo NOTE: we do not collide Asteroids with Enemies to simplify Enemy AI
     }
 
     private void TryPauseGame()
