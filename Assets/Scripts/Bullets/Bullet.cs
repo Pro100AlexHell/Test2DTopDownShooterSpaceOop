@@ -8,7 +8,7 @@ namespace Bullets
     /// </summary>
     public class Bullet : ObjectInGridWithColliderCircle<ObjectTypeInGrid>
     {
-        // todo better ?? to use 'default interface' \ 'TRAIT' C# 8.0
+        // todo NOTE: better to use 'default interface methods' \ 'TRAIT' C# 8.0; but I'm afraid to use it because of bugs in new versions of Unity
         public float DurationSecBeforeDestroy { get; private set; }
 
         /// <summary>
