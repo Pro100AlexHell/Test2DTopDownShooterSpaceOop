@@ -5,16 +5,13 @@ using GridForColliders;
 using MapGenerators;
 using PlayerWeapons;
 using Presenters;
+using Screens;
 using UnityEngine;
 using Views;
 
 public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpawner, IForBulletOnReachTargetDestroy
 {
-    // todo !!! CHANGE to Screen-s (View-s) ?
-    public GameObject ViewForGamePaused;
-    public GameObject ViewForGameLoosed;
-    public GameObject ViewForLevelWin;
-
+    public ScreenWithVariantsBasedOnGameState ScreenWithVariantsBasedOnGameState;
     public GlobalView GlobalView;
 
     /// <summary>
@@ -97,8 +94,21 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
 
     void Start()
     {
+        InitializeScreenWithVariantsBasedOnGameState();
         InitializeGridForColliders();
         InitializeLevel();
+    }
+
+    private void InitializeScreenWithVariantsBasedOnGameState()
+    {
+        ScreenWithVariantsBasedOnGameState.Init(
+            PauseGame,
+            UnpauseGame,
+            QuitGame,
+            RestartGame,
+            ProceedToNextLevel
+            );
+
     }
 
     private void InitializeGridForColliders()
@@ -114,8 +124,7 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
     {
         Debug.LogWarning("InitializeLevel(); _level = " + _level);
 
-        _gameState = GameState.Normal;
-        RecalculateVisibilityOfViewsForGameState();
+        SetGameState(GameState.Normal);
 
         _scoreThisLevel = 0;
         UpdateScoreView();
@@ -197,32 +206,8 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
     /// </summary>
     void Update()
     {
-        if (_gameState == GameState.Paused)
-        {
-            // NOTE: in fact, we put it on pause, because do not perform any updates and ignore input
-            TryUnpauseGame();
-            TryRestartGame();
-            TryQuitGame();
-            return;
-        }
-
-        if (_gameState == GameState.Loosed)
-        {
-            // NOTE: in fact, we put it on pause, because do not perform any updates and ignore input
-            TryRestartGame();
-            TryQuitGame();
-            return;
-        }
-
-        if (_gameState == GameState.LevelWin)
-        {
-            // NOTE: in fact, we put it on pause, because do not perform any updates and ignore input
-            TryProceedToNextLevel();
-            TryQuitGame();
-            return;
-        }
-
-        TryPauseGame();
+        // NOTE: in fact, we put it on pause, because do not perform any updates and ignore input
+        if (_gameState != GameState.Normal) return;
 
         _playerPresenter.TryReadInputAndHandle(Time.deltaTime, MapRect, PlayerMoveSpeedPerSec, this);
         _playerPresenter.UpdateCooldownOfAllWeapons(Time.deltaTime);
@@ -239,41 +224,34 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
         // todo NOTE: we do not collide Asteroids with Enemies to simplify Enemy AI
     }
 
-    private void TryPauseGame()
+    private void PauseGame()
     {
-        if (!Input.GetKeyDown(KeyCode.Escape)) return; // todo NOTE: 'ESC'
         Debug.LogWarning("PAUSE GAME");
-        _gameState = GameState.Paused;
-        RecalculateVisibilityOfViewsForGameState();
+        SetGameState(GameState.Paused);
     }
 
-    private void TryUnpauseGame()
+    private void UnpauseGame()
     {
-        if (!Input.GetKeyDown(KeyCode.Escape)) return; // todo NOTE: 'ESC'
         Debug.LogWarning("UNPAUSE GAME");
-        _gameState = GameState.Normal;
-        RecalculateVisibilityOfViewsForGameState();
+        SetGameState(GameState.Normal);
     }
 
-    private void TryRestartGame()
+    private void RestartGame()
     {
-        if (!Input.GetKeyDown(KeyCode.R)) return; // todo NOTE: 'R'
         Debug.LogWarning("RESTART GAME");
         TryDestroyAll();
         _level = 1;
         InitializeLevel();
     }
 
-    private void TryQuitGame()
+    private void QuitGame()
     {
-        if (!Input.GetKeyDown(KeyCode.Q)) return; // todo NOTE: 'Q'
         Debug.LogWarning("QUIT GAME");
         Application.Quit();
     }
 
-    private void TryProceedToNextLevel()
+    private void ProceedToNextLevel()
     {
-        if (!Input.GetKeyDown(KeyCode.E)) return; // todo NOTE: 'E'
         Debug.LogWarning("NEXT LEVEL");
         _level++;
         InitializeLevel();
@@ -484,8 +462,7 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
             return; // (assert)
         }
         Debug.LogWarning("SetStateGameLoose()");
-        _gameState = GameState.Loosed;
-        RecalculateVisibilityOfViewsForGameState();
+        SetGameState(GameState.Loosed);
         TryDestroyAll();
     }
 
@@ -497,9 +474,14 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
             return; // (assert)
         }
         Debug.LogWarning("SetStateLevelWin()");
-        _gameState = GameState.LevelWin;
-        RecalculateVisibilityOfViewsForGameState();
+        SetGameState(GameState.LevelWin);
         TryDestroyAll();
+    }
+
+    private void SetGameState(GameState gameState)
+    {
+        _gameState = gameState;
+        ScreenWithVariantsBasedOnGameState.OnChangedGameState(_gameState);
     }
 
     private void TryDestroyAll()
@@ -508,13 +490,6 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
         DestroyAllBullets();
         DestroyAllEnemies();
         DestroyAllAsteroids();
-    }
-
-    private void RecalculateVisibilityOfViewsForGameState()
-    {
-        ViewForGamePaused.SetActive(_gameState == GameState.Paused);
-        ViewForGameLoosed.SetActive(_gameState == GameState.Loosed);
-        ViewForLevelWin.SetActive(_gameState == GameState.LevelWin);
     }
 
     private void TryDestroyPlayer()
