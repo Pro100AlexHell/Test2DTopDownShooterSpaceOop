@@ -412,12 +412,13 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
             enemy.AddHealth(-bulletDamage);
             if (!enemy.IsAlive())
             {
-                AddScore(1);
-
+                // (DestroyEnemy before a potential Win (AddScore) - otherwise there will be double destruction)
                 // todo NOTE: mapping and cast because we need EnemyPresenter, not Enemy (which stored in grid)
                 EnemyPresenter enemyPresenter = _allMovablePresenters[enemy] as EnemyPresenter;
                 DestroyEnemy(enemyPresenter);
                 _allEnemies.Remove(enemyPresenter);
+
+                AddScore(1);
             }
         }
         else
