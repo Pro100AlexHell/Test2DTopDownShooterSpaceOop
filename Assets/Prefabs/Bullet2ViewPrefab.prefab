@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 142347624664396398}
   - component: {fileID: 142347624664396395}
   - component: {fileID: 142347624664396396}
-  - component: {fileID: 142347624664396397}
   m_Layer: 5
   m_Name: Bullet2ViewPrefab
   m_TagString: Untagged
@@ -76,19 +75,3 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!58 &142347624664396397
-CircleCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 142347624664396399}
-  m_Enabled: 0
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
-  m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0}
-  serializedVersion: 2
-  m_Radius: 10
