@@ -45,7 +45,7 @@ namespace GridForColliders.Core
     /// <typeparam name="TObject">Object class in the grid</typeparam>
     /// <typeparam name="TObjectType">Object-type class (as int, for bit mask)</typeparam>
     public class GridForColliders<TObject, TObjectType>
-        where TObject : IObjectInGridWithCollider<TObjectType>
+        where TObject : class, IObjectInGridWithCollider<TObjectType>
         where TObjectType : IAsIntForBitMask
     {
         /// <summary>
@@ -464,37 +464,145 @@ namespace GridForColliders.Core
             }
         }
 
-        // todo TEST !!!!!!
-        // todo USE for Weapon Ray !!!!!!
-        public void GetFirstObjectOnRay(Vector2 rayStart, Vector2 rayEnd, TObjectType type, Action<TObject> onFound)
+        public void GetFirstObjectOnRay(Vector2 rayStart, float rayAngleRad, float maxRange,
+            TObjectType type, out TObject resultObject, out Vector2 rayEnd)
         {
-            // todo !! IMPLEMENT !!
-
-            // todo interpolate line by cells
-
-            // todo for every cell in loop:
-            // todo (ordered, need first object only!)
+            // sample line by cells
             //
-            // todo filter like --->
-            /*List<TObject> objectsListInCell = _objectsListByCellId[cellId];
+            // (for example: _cellSize = 150, stepFromNyquistFrequency = 75,
+            // maxRange = 70, stepsCount = 2, sampled points (tempPos): [rayStart, rayStart+75*(cos(a),sin(a))])
+            float stepFromNyquistFrequency = _cellSize / 2f; // NOTE: Nyquist frequency
+            int stepsCount = Mathf.CeilToInt(maxRange / stepFromNyquistFrequency) + 1;
+            float cos = Mathf.Cos(rayAngleRad);
+            float sin = Mathf.Sin(rayAngleRad);
+            float stepX = cos * stepFromNyquistFrequency;
+            float stepY = sin * stepFromNyquistFrequency;
+            //
+            Vector2 rayEndIntermediate = new Vector2(
+                cos * maxRange + rayStart.x, // todo NOTE: infinity is not currently supported
+                sin * maxRange + rayStart.y
+            );
+            //
+            float tempX = rayStart.x;
+            float tempY = rayStart.y;
+            bool isOutOfBoundsPrev = false;
+            bool isRayLiesCompletelyOutsideTheMap = true;
+            //
+            resultObject = null;
+            rayEnd = Vector2.zero;
+            //
+            _reusableListCellIds.Clear();
+            List<int> listAsSetCellIds = _reusableListCellIds;
+            //
+            for (int step = 0; step < stepsCount;
+                step++,
+                tempX += stepX,
+                tempY += stepY)
+            {
+                Vector2 tempPos = new Vector2(tempX, tempY);
+                int cellId = GetCellIdByPos(tempPos);
+                bool isOutOfBounds = cellId == int.MinValue;
+                if (isOutOfBounds)
+                {
+                    // todo NOTE: break on ray state change inside->outside;
+                    // todo NOTE: not break immediately - for case when ray starts outside the map
+                    if (step == 0 || isOutOfBoundsPrev)
+                    {
+                        isOutOfBoundsPrev = true;
+                        continue;
+                    }
+                    else
+                    {
+                        isOutOfBoundsPrev = true;
+                        break;
+                    }
+                }
+                //
+                isOutOfBoundsPrev = false;
+                isRayLiesCompletelyOutsideTheMap = false;
 
-            _reusableListForFilter1.Clear();
-            List<TObject> objectsFilteredType = _reusableListForFilter1;
-            FilterObjectsByType(objectsListInCell, objectsFilteredType, type);
+                if (listAsSetCellIds.Contains(cellId)) continue;
+                listAsSetCellIds.Add(cellId);
+
+                // todo refactor next lines .. ???
+                List<TObject> objectsListInCell = _objectsListByCellId[cellId];
+
+                _reusableListForFilter1.Clear();
+                List<TObject> objectsFilteredType = _reusableListForFilter1;
+                FilterObjectsByType(objectsListInCell, objectsFilteredType, type);
+
+                TObject foundClosestObject;
+                Vector2 foundClosestToStartIntersectionPoint;
+                float foundClosestAtDistSquared;
+                FindSelectedFromListCollidedObjectClosestToStartOfLine(rayStart, rayEndIntermediate,
+                    objectsFilteredType, out foundClosestObject,
+                    out foundClosestToStartIntersectionPoint, out foundClosestAtDistSquared);
+                if (foundClosestObject != null)
+                {
+                    // (can be found on more than maxRange because we are sampling by cells)
+                    if (Mathf.Sqrt(foundClosestAtDistSquared) <= maxRange)
+                    {
+                        resultObject = foundClosestObject;
+                        rayEnd = foundClosestToStartIntersectionPoint;
+                    }
+
+                    // break, since we only want the first closest object
+                    // (and found the closest object in that cell),
+                    // no need to check other cells (which are located further from the start)
+                    break;
+                }
+            }
+
+            if (resultObject == null)
+            {
+                if (isRayLiesCompletelyOutsideTheMap)
+                {
+                    // if ray lies completely outside the map -> end point is irrelevant
+                    rayEnd = rayStart;
+                }
+                else
+                {
+                    if (isOutOfBoundsPrev)
+                    {
+                        // todo !! implement: if ray ends outside the map -> end point = with border collision
+                        // todo !! we do not currently check for collision !!
+                        rayEnd = rayEndIntermediate;
+                    }
+                    else
+                    {
+                        // if ray ends inside the map -> end point = on maxRange
+                        rayEnd = rayEndIntermediate;
+                    }
+                }
+            }
+        }
+
+        private void FindSelectedFromListCollidedObjectClosestToStartOfLine(Vector2 lineStart, Vector2 lineEnd,
+            List<TObject> objects, out TObject foundClosestObject,
+            out Vector2 foundClosestToStartIntersectionPoint, out float foundClosestAtDistSquared)
+        {
+            foundClosestObject = null;
+            foundClosestToStartIntersectionPoint = Vector2.zero;
+            foundClosestAtDistSquared = float.MaxValue;
 
             // todo NOTE: iteration optimization
-            int objectsFilteredTypeCount = objectsFilteredType.Count;
-            for (int n = 0; n < objectsFilteredTypeCount; n++)
+            int objectsCount = objects.Count;
+            for (int n = 0; n < objectsCount; n++)
             {
-                TObject obj = objectsFilteredType[n];
-
-                // todo !! on ray - check intersect - IntersectCheckers. LineCircle ?
-                // todo see https://github.com/davidfig/intersects/blob/master/line-circle.js
-                if ()
+                TObject obj = objects[n];
+                Vector2 closestToStartIntersectionPoint;
+                bool isObjectOnLine = obj.CheckCollideWithLine(lineStart, lineEnd, out closestToStartIntersectionPoint);
+                if (isObjectOnLine)
                 {
-                    onFound(obj);
+                    float distSquared = (lineStart - closestToStartIntersectionPoint).sqrMagnitude;
+                    if (foundClosestObject == null || distSquared < foundClosestAtDistSquared)
+                    {
+                        foundClosestObject = obj;
+                        foundClosestToStartIntersectionPoint = closestToStartIntersectionPoint;
+                        foundClosestAtDistSquared = distSquared;
+                    }
                 }
-            }*/
+            }
         }
 
         // todo NOTE: NOT-THREAD-SAFE !

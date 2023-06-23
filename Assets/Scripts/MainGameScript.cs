@@ -190,7 +190,7 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
         {
             new PlayerWeaponBulletFastCooldown(),
             new PlayerWeaponBulletSplash(),
-            // todo laser weapon with ray
+            new PlayerWeaponLaser()
         };
 
         foreach (var weapon in allPlayerWeapons)
@@ -280,6 +280,26 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
                 _allBullets.RemoveAt(i);
             }
         }
+    }
+
+    void IForWeaponUse.DoLaserWeaponWithDamageFirstAndVisualEffect(Vector2 playerPos, float angleRad, float maxRange, int damage)
+    {
+        Debug.LogWarning("DoLaserWeaponWithDamageFirstAndVisualEffect: playerPos.Pos = " + playerPos + "; angleRad = " + angleRad + "; maxRange = " + maxRange);
+
+        ObjectInGridWithCollider<ObjectTypeInGrid> resultObject;
+        Vector2 rayEnd;
+        _gridForColliders.GetFirstObjectOnRay(playerPos, angleRad, maxRange,
+            ObjectTypeInGrid.Enemy.Or(ObjectTypeInGrid.Asteroid),
+            out resultObject, out rayEnd);
+
+        if (resultObject != null)
+        {
+            Debug.LogWarning("DoLaserWeaponWithDamageFirstAndVisualEffect: type = " + resultObject.ObjectTypeInGrid.AsInt() + "; pos = " + resultObject.Pos);
+            TryDamageEnemyOrAsteroid(resultObject, damage);
+        }
+
+        // todo !! create VisualEffect (LineRenderer from playerPos to rayEnd)
+        Debug.DrawLine(playerPos, rayEnd, Color.red, 10);
     }
 
     void IEnemyCreatorForSpawner.SpawnEnemy(Vector2 pos, int enemyTypeIndex)
@@ -376,12 +396,12 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
         bullet.OnReachTargetDestroy(this);
     }
 
-    private void TryDamageEnemyOrAsteroid(ObjectInGridWithCollider<ObjectTypeInGrid> obj, int bulletDamage)
+    private void TryDamageEnemyOrAsteroid(ObjectInGridWithCollider<ObjectTypeInGrid> obj, int damage)
     {
         if (obj.ObjectTypeInGrid == ObjectTypeInGrid.Enemy)
         {
             Enemy enemy = obj as Enemy;
-            enemy.AddHealth(-bulletDamage);
+            enemy.AddHealth(-damage);
             if (!enemy.IsAlive())
             {
                 // (DestroyEnemy before a potential Win (AddScore) - otherwise there will be double destruction)

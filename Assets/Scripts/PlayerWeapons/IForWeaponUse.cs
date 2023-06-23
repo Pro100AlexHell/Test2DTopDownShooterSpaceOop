@@ -1,4 +1,5 @@
 using Bullets;
+using UnityEngine;
 
 namespace PlayerWeapons
 {
@@ -6,6 +7,6 @@ namespace PlayerWeapons
     {
         void AddBullet(Bullet bullet, int bulletViewIndex);
 
-        // todo Laser (create VisualEffect + Raycast with Damage first enemy\asteroid on ray)
+        void DoLaserWeaponWithDamageFirstAndVisualEffect(Vector2 playerPos, float angleRad, float maxRange, int damage);
     }
 }

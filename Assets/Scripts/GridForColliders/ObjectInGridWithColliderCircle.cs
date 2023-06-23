@@ -90,9 +90,10 @@ namespace GridForColliders
                 pos.x, pos.y, radius);
         }
 
-        // todo !!
-        /*public override bool CheckCollideWithLine(Vector2 posStart, Vector2 posEnd)
+        public override bool CheckCollideWithLine(Vector2 lineStart, Vector2 lineEnd, out Vector2 closestToStartIntersectionPoint)
         {
-        }*/
+            return IntersectCheckers.CheckAndGetClosestToStartIntersectionPointOfLineSegmentAndCircle(lineStart, lineEnd,
+                Pos.x, Pos.y, CircleColliderRadius, out closestToStartIntersectionPoint);
+        }
     }
 }

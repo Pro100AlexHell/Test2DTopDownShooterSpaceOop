@@ -34,6 +34,6 @@ namespace GridForColliders.Core
 
         bool CheckCollideWithCircle(Vector2 pos, float radius);
 
-        //bool CheckCollideWithLine(Vector2 posStart, Vector2 posEnd); // todo !!
+        bool CheckCollideWithLine(Vector2 lineStart, Vector2 lineEnd, out Vector2 closestToStartIntersectionPoint);
     }
 }
