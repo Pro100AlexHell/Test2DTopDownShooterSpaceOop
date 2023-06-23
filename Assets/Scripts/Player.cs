@@ -18,16 +18,11 @@ public class Player : ObjectInGridWithColliderCircle<ObjectTypeInGrid>
 
         set
         {
-            _selectedWeaponIndex = value;
-            if (_selectedWeaponIndex < 0)
+            if (value >= 0 && value <= _allPlayerWeapons.Count - 1)
             {
-                _selectedWeaponIndex = 0;
+                _selectedWeaponIndex = value;
+                OnChangedSelectedWeaponIndex?.Invoke(_selectedWeaponIndex);
             }
-            if (_selectedWeaponIndex > _allPlayerWeapons.Count - 1)
-            {
-                _selectedWeaponIndex = _allPlayerWeapons.Count - 1;
-            }
-            OnChangedSelectedWeaponIndex?.Invoke(_selectedWeaponIndex);
         }
     }
 

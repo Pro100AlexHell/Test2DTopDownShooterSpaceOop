@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using PlayerWeapons;
 using UnityEngine;
 using Views;
@@ -29,7 +30,8 @@ namespace Presenters
             IForWeaponUse iForWeaponUse)
         {
             TryReadInputAndAssignDeltaForMovePlayer(deltaTimeSec, mapRect, playerMoveSpeedPerSec);
-            TryReadInputForChangeSelectedWeapon();
+            TryReadInputForChangeSelectedWeaponThroughMouseWheel();
+            TryReadInputForChangeSelectedWeaponThroughKeyCodes();
             TryUsePlayerWeapon(iForWeaponUse);
         }
 
@@ -74,11 +76,7 @@ namespace Presenters
             }
         }
 
-        /// <summary>
-        /// todo NOTE: MOUSE WHEEL (up, down)
-        /// todo !! it's better to use keyboard numbers: [1], [2], [3]
-        /// </summary>
-        private void TryReadInputForChangeSelectedWeapon()
+        private void TryReadInputForChangeSelectedWeaponThroughMouseWheel()
         {
             if (Mathf.Approximately(Input.mouseScrollDelta.y, 0)) return;
 
@@ -92,6 +90,31 @@ namespace Presenters
             }
 
             Debug.Log("ChangeSelectedWeapon: SelectedWeaponIndex = " + Model.SelectedWeaponIndex);
+        }
+
+        private readonly List<KeyCode> _keyCodesForChangeSelectedWeaponIndex = new List<KeyCode>()
+        {
+            KeyCode.Alpha1,
+            KeyCode.Alpha2,
+            KeyCode.Alpha3,
+            KeyCode.Alpha4,
+            KeyCode.Alpha5,
+            KeyCode.Alpha6,
+            KeyCode.Alpha7,
+            KeyCode.Alpha8,
+            KeyCode.Alpha9
+        };
+        //
+        private void TryReadInputForChangeSelectedWeaponThroughKeyCodes()
+        {
+            for (int i = 0; i < _keyCodesForChangeSelectedWeaponIndex.Count; i++)
+            {
+                if (Input.GetKeyDown(_keyCodesForChangeSelectedWeaponIndex[i]))
+                {
+                    Model.SelectedWeaponIndex = i;
+                    Debug.Log("ChangeSelectedWeapon: SelectedWeaponIndex = " + Model.SelectedWeaponIndex);
+                }
+            }
         }
 
         private void TryUsePlayerWeapon(IForWeaponUse iForWeaponUse)
