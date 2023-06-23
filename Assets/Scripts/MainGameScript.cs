@@ -8,6 +8,7 @@ using Presenters;
 using Screens;
 using UnityEngine;
 using Views;
+using VisualEffects;
 
 public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpawner, IForBulletOnReachTargetDestroy
 {
@@ -26,6 +27,8 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
     public BulletViewPrefabCollection BulletViewPrefabCollection;
 
     public GameObject AsteroidViewPrefab;
+
+    public GameObject ExplosionVisualEffectPrefab;
 
     private readonly float PlayerCircleColliderRadius = 47; // todo !!! choose based on image size !!!
 
@@ -80,6 +83,8 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
     /// </summary>
     private Dictionary<ObjectInGridWithCollider<ObjectTypeInGrid>, IMovablePresenterInGrid> _allMovablePresenters;
 
+    private List<VisualEffect> _allVisualEffects;
+
     private EnemySpawner _enemySpawner;
 
     private readonly EnemyConfigCollection _enemyConfigCollection = new EnemyConfigCollection();
@@ -133,6 +138,7 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
         _allEnemies = new List<EnemyPresenter>();
         _allAsteroids = new List<AsteroidPresenter>();
         _allMovablePresenters = new Dictionary<ObjectInGridWithCollider<ObjectTypeInGrid>, IMovablePresenterInGrid>();
+        _allVisualEffects = new List<VisualEffect>();
         InitializePlayer();
 
         _enemySpawner = new EnemySpawnerRandomWithCooldown(EnemySpawnIntervalSec(_level), MapRect,
@@ -219,6 +225,8 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
 
         UpdatePosForAll(Time.deltaTime);
 
+        UpdateExpireForAllVisualEffects(Time.deltaTime);
+
         TryCollidePlayerWithEnemiesOrAsteroids();
         TryCollideBulletsWithEnemiesOrAsteroids();
         // todo NOTE: we do not collide Asteroids with Enemies to simplify Enemy AI
@@ -292,14 +300,15 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
             ObjectTypeInGrid.Enemy.Or(ObjectTypeInGrid.Asteroid),
             out resultObject, out rayEnd);
 
+        // (AddVisualEffect before a potential Win)
+        AddVisualEffect(new VisualEffectRay(ParentForObjectViews, playerPos, rayEnd));
+        //Debug.DrawLine(playerPos, rayEnd, Color.red, 10);
+
         if (resultObject != null)
         {
             Debug.LogWarning("DoLaserWeaponWithDamageFirstAndVisualEffect: type = " + resultObject.ObjectTypeInGrid.AsInt() + "; pos = " + resultObject.Pos);
             TryDamageEnemyOrAsteroid(resultObject, damage);
         }
-
-        // todo !! create VisualEffect (LineRenderer from playerPos to rayEnd)
-        Debug.DrawLine(playerPos, rayEnd, Color.red, 10);
     }
 
     void IEnemyCreatorForSpawner.SpawnEnemy(Vector2 pos, int enemyTypeIndex)
@@ -338,6 +347,26 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
         foreach (IMovablePresenterInGrid movablePresenter in _allMovablePresenters.Values)
         {
             movablePresenter.UpdatePos(deltaTimeSec, _gridForColliders);
+        }
+    }
+
+    private void AddVisualEffect(VisualEffect visualEffect)
+    {
+        _allVisualEffects.Add(visualEffect);
+    }
+
+    private void UpdateExpireForAllVisualEffects(float deltaTimeSec)
+    {
+        for (int i = _allVisualEffects.Count - 1; i >= 0; i--)
+        {
+            VisualEffect visualEffect = _allVisualEffects[i];
+            bool needDestroy = visualEffect.UpdateExpire(deltaTimeSec);
+            if (needDestroy)
+            {
+                Debug.LogError("VisualEffect needDestroy");
+                _allVisualEffects.RemoveAt(i);
+                DestroyVisualEffect(visualEffect);
+            }
         }
     }
 
@@ -437,7 +466,11 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
 
     void IForBulletOnReachTargetDestroy.SplashDamageEnemiesOrAsteroids(Vector2 pos, float range, int damage)
     {
-        Debug.LogError("SplashDamageEnemiesOrAsteroids");
+        Debug.LogError("SplashDamageEnemiesOrAsteroids pos = " + pos + "; range = " + range);
+
+        GameObject gameObjectView = CreateGameObjectView(pos, ExplosionVisualEffectPrefab);
+        const float durationSec = 1.0f;
+        AddVisualEffect(new VisualEffectWithView(gameObjectView, durationSec));
 
         // todo NOTE: new HashSet() - not optimal
         HashSet<ObjectInGridWithCollider<ObjectTypeInGrid>> foundObjects = new HashSet<ObjectInGridWithCollider<ObjectTypeInGrid>>();
@@ -521,6 +554,23 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
         DestroyAllBullets();
         DestroyAllEnemies();
         DestroyAllAsteroids();
+        DestroyAllVisualEffects();
+    }
+
+    private void DestroyAllVisualEffects()
+    {
+        for (int i = _allVisualEffects.Count - 1; i >= 0; i--)
+        {
+            DestroyVisualEffect(_allVisualEffects[i]);
+        }
+
+        _allVisualEffects.Clear();
+    }
+
+    private void DestroyVisualEffect(VisualEffect visualEffect)
+    {
+        // todo pool ?
+        visualEffect.OnDestroy();
     }
 
     private void TryDestroyPlayer()
@@ -594,14 +644,14 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
     private PlayerView CreatePlayerView(Vector2 pos)
     {
         PlayerView playerView = Instantiate(PlayerViewPrefab, pos, Quaternion.identity);// todo pool ?
-        playerView.transform.SetParent(ParentForObjectViews, false);
+        playerView.transform.SetParent(ParentForObjectViews, true);
         return playerView;
     }
 
     private GameObject CreateGameObjectView(Vector2 pos, GameObject prefab)
     {
         GameObject view = Instantiate(prefab, pos, Quaternion.identity);// todo pool ?
-        view.transform.SetParent(ParentForObjectViews, false);
+        view.transform.SetParent(ParentForObjectViews, true);
         return view;
     }
 }
