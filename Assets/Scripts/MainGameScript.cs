@@ -332,14 +332,11 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
     {
         Debug.LogError("OnCollidePlayerWithEnemyOrAsteroid");
 
-        // (before a potential loose - otherwise there will be double destruction)
+        // (DestroyEnemy before a potential loose - otherwise there will be double destruction)
         if (obj2.ObjectTypeInGrid == ObjectTypeInGrid.Enemy)
         {
             Enemy enemy = obj2 as Enemy;
-            // todo NOTE: mapping and cast because we need EnemyPresenter, not Enemy (which stored in grid)
-            EnemyPresenter enemyPresenter = _allMovablePresenters[enemy] as EnemyPresenter;
-            DestroyEnemy(enemyPresenter);
-            _allEnemies.Remove(enemyPresenter);
+            FindAndDestroyEnemyPresenterByEnemy(enemy);
         }
         else
         {
@@ -370,10 +367,7 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
         Debug.LogError("OnCollideBulletWithEnemyOrAsteroid");
 
         Bullet bullet = obj1 as Bullet;
-        // todo NOTE: mapping and cast because we need BulletPresenter, not Bullet (which stored in grid)
-        BulletPresenter bulletPresenter = _allMovablePresenters[bullet] as BulletPresenter;
-        DestroyBullet(bulletPresenter);
-        _allBullets.Remove(bulletPresenter);
+        FindAndDestroyBulletPresenterByBullet(bullet);
 
         TryDamageEnemyOrAsteroid(obj2, bullet.Damage);
 
@@ -391,11 +385,7 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
             if (!enemy.IsAlive())
             {
                 // (DestroyEnemy before a potential Win (AddScore) - otherwise there will be double destruction)
-                // todo NOTE: mapping and cast because we need EnemyPresenter, not Enemy (which stored in grid)
-                EnemyPresenter enemyPresenter = _allMovablePresenters[enemy] as EnemyPresenter;
-                DestroyEnemy(enemyPresenter);
-                _allEnemies.Remove(enemyPresenter);
-
+                FindAndDestroyEnemyPresenterByEnemy(enemy);
                 AddScore(1);
             }
         }
@@ -403,12 +393,9 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
         {
             // NOTE: Asteroid does not add score
 
-            // NOTE: Asteroid is destroyed
+            // NOTE: Asteroid is destroyed, like health == 1
             Asteroid asteroid = obj as Asteroid;
-            // todo NOTE: mapping and cast because we need AsteroidPresenter, not Asteroid (which stored in grid)
-            AsteroidPresenter asteroidPresenter = _allMovablePresenters[asteroid] as AsteroidPresenter;
-            DestroyAsteroid(asteroidPresenter);
-            _allAsteroids.Remove(asteroidPresenter);
+            FindAndDestroyAsteroidPresenterByAsteroid(asteroid);
         }
     }
 
@@ -482,6 +469,30 @@ public class MainGameScript : MonoBehaviour, IForWeaponUse, IEnemyCreatorForSpaw
     {
         _gameState = gameState;
         ScreenWithVariantsBasedOnGameState.OnChangedGameState(_gameState);
+    }
+
+    private void FindAndDestroyEnemyPresenterByEnemy(Enemy enemy)
+    {
+        // todo NOTE: mapping and cast because we need EnemyPresenter, not Enemy (which stored in grid)
+        EnemyPresenter enemyPresenter = _allMovablePresenters[enemy] as EnemyPresenter;
+        DestroyEnemy(enemyPresenter);
+        _allEnemies.Remove(enemyPresenter);
+    }
+
+    private void FindAndDestroyBulletPresenterByBullet(Bullet bullet)
+    {
+        // todo NOTE: mapping and cast because we need BulletPresenter, not Bullet (which stored in grid)
+        BulletPresenter bulletPresenter = _allMovablePresenters[bullet] as BulletPresenter;
+        DestroyBullet(bulletPresenter);
+        _allBullets.Remove(bulletPresenter);
+    }
+
+    private void FindAndDestroyAsteroidPresenterByAsteroid(Asteroid asteroid)
+    {
+        // todo NOTE: mapping and cast because we need AsteroidPresenter, not Asteroid (which stored in grid)
+        AsteroidPresenter asteroidPresenter = _allMovablePresenters[asteroid] as AsteroidPresenter;
+        DestroyAsteroid(asteroidPresenter);
+        _allAsteroids.Remove(asteroidPresenter);
     }
 
     private void TryDestroyAll()
